@@ -7,10 +7,8 @@ import pytest
 from tests.conftest import create_task, headers, run_task_and_wait
 
 
-pytestmark = pytest.mark.xfail(
-    reason="Acceptance guidance for the candidate implementation; starter repo is intentionally incomplete.",
-    strict=False,
-)
+# Acceptance guidance for the candidate implementation.
+# All tests below pass after completing TODO(candidate/P0/P1/P2) items.
 
 
 def _json_text(value: object) -> str:

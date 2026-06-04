@@ -13,6 +13,26 @@ from agentops_assessment.rag.search import KnowledgeIndex
 
 ToolCallable = Callable[[dict[str, Any]], dict[str, Any]]
 
+SENSITIVE_FIELD_KEYS: set[str] = {"vendor_secret", "unit_cost_usd"}
+
+
+def sanitize_output(obj: Any) -> Any:
+    """递归移除 tool output / result / event payload 中的敏感字段。
+
+    当前需要脱敏的字段：
+      - vendor_secret
+      - unit_cost_usd
+    """
+    if isinstance(obj, dict):
+        return {
+            key: sanitize_output(value)
+            for key, value in obj.items()
+            if key not in SENSITIVE_FIELD_KEYS
+        }
+    if isinstance(obj, list):
+        return [sanitize_output(item) for item in obj]
+    return obj
+
 
 class ToolRegistry:
     def __init__(self, retry_attempts: int = 1) -> None:
@@ -67,9 +87,8 @@ class ToolRegistry:
             self.last_call_attempts[name] = attempts
             try:
                 result = self._tools[name](args)
-                # TODO(candidate/P1): 规范化工具输出，并对敏感字段做脱敏；
-                # vendor_secret、unit_cost_usd 等不得进入 result/events/audit。
-                return result
+                # 对敏感字段做脱敏；vendor_secret、unit_cost_usd 等不得进入 result/events/audit
+                return sanitize_output(result)
             except TransientIntegrationError as exc:
                 last_error = exc
                 continue
